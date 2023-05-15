@@ -1,0 +1,4 @@
+# List of Contributors:
+Tim Jammer, TU Darmstadt <tim.jammer@tu-darmstadt.de>
+Alexander Hück, TU Darmstadt <alexander.hueck@tu-darmstadt.de>
+Joachim Jenke, RWTH Aachen University <jenke@itc.rwth-aachen.de>
