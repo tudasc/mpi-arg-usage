@@ -172,16 +172,19 @@ mpi_collective_funcs = [
     'MPI_Ireduce_scatter',
     'MPI_Ialltoallw',
     'MPI_Iexscan',
-    'MPI_Neighbor_allgather',
-    'MPI_Neighbor_allgatherv',
-    'MPI_Neighbor_alltoall',
-    'MPI_Neighbor_alltoallv',
-    'MPI_Neighbor_alltoallw',
-    'MPI_Neighbor_allgather_init',
-    'MPI_Neighbor_allgatherv_init',
-    'MPI_Neighbor_alltoall_init',
-    'MPI_Neighbor_alltoallv_init',
-    'MPI_Neighbor_alltoallw_init'
+# these are considerd topo
+#    'MPI_Neighbor_allgather',
+#    'MPI_Neighbor_allgatherv',
+#    'MPI_Neighbor_alltoall',
+#    'MPI_Neighbor_alltoallv',
+#    'MPI_Neighbor_alltoallw',
+#    'MPI_Neighbor_allgather_init',
+#    'MPI_Neighbor_allgatherv_init',
+#    'MPI_Neighbor_alltoall_init',
+#    'MPI_Neighbor_alltoallv_init',
+#    'MPI_Neighbor_alltoallw_init',
+    'MPI_Reduce_scatter_block',
+    'MPI_Scan'
     # some persistent collectives are missing
 ]
 
@@ -1086,12 +1089,12 @@ mpi_persistent = set(mpi_persistent_funcs) | mpi_scorep_custom_request_persisten
 mpi_attrib = set(mpi_scorep_cg_ext + mpi_scorep_type_ext + mpi_scorep_rma_ext)
 mpi_info = set(mpi_scorep_info_custom)
 mpi_rma = set(mpi_scorep_rma + mpi_scorep_rma_misc)
-mpi_comm_group = set(mpi_scorep_cg + mpi_scorep_cg_misc)
+mpi_comm_group = set(mpi_comm_group_funcs + mpi_scorep_cg + mpi_scorep_cg_misc)
 mpi_types = set(mpi_scorep_types + mpi_scorep_type_misc)
 mpi_types_constructor_only = set(mpi_scorep_types_constr)
 mpi_topo = set(mpi_scorep_topo)
 mpi_tools = set(mpi_scorep_tools + mpi_scorep_perf)
-mpi_io = set(mpi_scorep_io + mpi_scorep_io_misc)
+mpi_io = set(mpi_scorep_io + mpi_scorep_io_misc + mpi_io_funcs)
 mpi_misc = set(mpi_scorep_misc + mpi_scorep_env)
 mpi_error = set(mpi_scorep_err + mpi_scorep_cg_err + mpi_scorep_rma_err + mpi_scorep_io_err)
 mpi_p2p = set(mpi_scorep_p2p + mpi_scorep_custom_request_p2p) - mpi_persistent
@@ -1110,7 +1113,20 @@ mpi_categories = {
     'comm_group': mpi_comm_group,
     'types': mpi_types,
     'topo': mpi_topo,
-    'persistent':mpi_persistent,
+    'persistent': mpi_persistent,
     'processmgmt': mpi_processm
+}
 
+mpi_categories_for_scoring = {
+    'non-blocking\nPtP': [f for f in mpi_p2p if "MPI_I" in f],
+    'blocking\nPtP': set(mpi_p2p) - set([f for f in mpi_p2p if "MPI_I" in f]),
+    'RMA': mpi_rma,
+    'Reduction': ["MPI_Reduce", "MPI_Ireduce", "MPI_Allreduce", "MPI_Iallreduce"],
+    'Collective': set(mpi_collective_funcs) - set(["MPI_Reduce", "MPI_Ireduce", "MPI_Allreduce", "MPI_Iallreduce"]),
+    'Comm Group': mpi_comm_group,
+    'Types': mpi_types,
+    'Topology': mpi_topo,
+    'Persistent': mpi_persistent,
+    'File': mpi_io,
+    'Process-Mgmt': mpi_processm,
 }

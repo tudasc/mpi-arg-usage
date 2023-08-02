@@ -92,8 +92,9 @@ def main():
     cobe_correct = cobe_df[cobe_df['src_location'].str.contains("correct/")]['call'].unique()
     cobe_faulty = cobe_df[~cobe_df['src_location'].str.contains("correct/")]['call'].unique()
 
-    mbi_correct = mbi_df[mbi_df['src_location'].str.contains("no-error-")]['call'].unique()
-    mbi_faulty = mbi_df[~mbi_df['src_location'].str.contains("no-error-")]['call'].unique()
+    mbi_faulty = mbi_df[mbi_df['src_location'].str.contains("_nok.c")]['call'].unique()
+    mbi_correct = mbi_df[mbi_df['src_location'].str.contains("_nok.c")]['call'].unique()
+
 
     print("ALL Testcases:")
     print_stats(real_world, cobe_df['call'].unique(), mbi_df['call'].unique())
