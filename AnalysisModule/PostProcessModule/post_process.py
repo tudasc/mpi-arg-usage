@@ -6,7 +6,7 @@ from AnalysisModule.PostProcessModule.MPI_Versions import get_version_dict
 from AnalysisModule.MPIAnalysisModule.MPIAPICategories import *
 
 
-def post_process_data(df_raw):
+def post_process_data(df_raw, match_only_same_file=False):
     print("Post-Process-data")
     tqdm.pandas()
     pandarallel.initialize(progress_bar=True)
@@ -24,11 +24,17 @@ def post_process_data(df_raw):
 
     # try to match a corresponding type creation function for ech type used
     print("Stage 3 of 7")
-    df = df.parallel_apply(get_corresponding_creator, axis=1, args=(df_raw, 'DATATYPE', 'newDATATYPE',))
+    if 'DATATYPE' in df.columns and "newDatatype" in df.columns:
+        df = df.parallel_apply(get_corresponding_creator, axis=1,
+                               args=(df_raw, 'DATATYPE', 'newDATATYPE', False, match_only_same_file))
     print("Stage 4 of 7")
-    df = df.parallel_apply(get_corresponding_creator, axis=1, args=(df_raw, 'COMMUNICATOR', 'newCOMMUNICATOR',))
+    if 'COMMUNICATOR' in df.columns and "newCOMMUNICATOR" in df.columns:
+        df = df.parallel_apply(get_corresponding_creator, axis=1,
+                               args=(df_raw, 'COMMUNICATOR', 'newCOMMUNICATOR', False, match_only_same_file))
     print("Stage 5 of 7")
-    df = df.parallel_apply(get_corresponding_creator, axis=1, args=(df_raw, 'GROUP', 'newGROUP',))
+    if 'GROUP' in df.columns and "newGROUP" in df.columns:
+        df = df.parallel_apply(get_corresponding_creator, axis=1,
+                               args=(df_raw, 'GROUP', 'newGROUP', False, match_only_same_file))
     print("Stage 6 of 7")
     version_dict = get_version_dict()
     df['version'] = df.progress_apply(get_version, axis=1, args=(version_dict,))
@@ -43,11 +49,13 @@ def post_process_data(df_raw):
     return df
 
 
-def get_corresponding_creator(row, full_df, col, col_new, print_inconclusive=False):
+def get_corresponding_creator(row, full_df, col, col_new, print_inconclusive=False, match_only_same_file=False):
     if not pd.isnull(row[col]):
         datatype = row[col].strip()
         if not re.fullmatch(is_mpi_builtin, datatype):
             select_matching_code = full_df[full_df['Code'] == row['Code']]
+            if match_only_same_file:
+                select_matching_code = select_matching_code[select_matching_code['src_location'] == row['src_location']]
             # the dtype creators take a pointer
             matching_types = [datatype, '&' + datatype]
             if datatype.startswith('*'):

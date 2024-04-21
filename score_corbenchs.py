@@ -6,6 +6,7 @@ from ScoringModule.ScoringTable import use_scoring_table
 from ScoringModule.ScoringTable import calls_to_exclude
 from AnalysisModule.MPIAnalysisModule.MPIAPICategories import mpi_categories_for_scoring
 from AnalysisModule.MPIAnalysisModule.MPIAPICategories import mpi_all_mpi
+from AnalysisModule.PostProcessModule.post_process import post_process_data
 
 import argparse
 import pandas as pd
@@ -28,6 +29,8 @@ def parseArgs():
                         help='data for MPI-Corrbench')
     parser.add_argument('--mbi', default='merged_mbi.csv',
                         help='data for MpiBugsInitiative')
+    parser.add_argument('--mbb', default='mbb.csv',
+                        help='data for MpiBugBench')
 
     return parser.parse_args()
 
@@ -112,14 +115,14 @@ def get_scoresheet_overview_plot(score_table, prefix):
     plt.savefig(prefix + "category_scores.pdf", bbox_inches='tight')
 
 
-def get_radar_plot(series, label, series2, label2, title, prefix):
+def get_radar_plot(series_lapel_list, title, prefix):
     sns.set_style("whitegrid")
     from numpy import pi
     plt.clf()
 
     # ------- PART 1: Create background
     # number of variable
-    categories = list(series.index)
+    categories = list(series_lapel_list[0][0].index)
     N = len(categories)
 
     # What will be the angle of each axis in the plot? (we divide the plot / number of variable)
@@ -127,8 +130,8 @@ def get_radar_plot(series, label, series2, label2, title, prefix):
     angles += angles[:1]
 
     # Initialise the spider plot
-    fig = plt.figure(figsize=(6,6))
-    ax = fig.add_subplot(111, polar=True,)
+    fig = plt.figure(figsize=(6, 6))
+    ax = fig.add_subplot(111, polar=True, )
 
     # If you want the first axis to be on top:
     ax.set_theta_offset(pi / 2)
@@ -143,7 +146,7 @@ def get_radar_plot(series, label, series2, label2, title, prefix):
             lab.set_horizontalalignment("right")
 
     # ax.tick_params(axis='x', rotation=5.5)
-    #ax.tick_params(pad=123)
+    # ax.tick_params(pad=123)
 
     # Draw ylabels
     ax.set_rlabel_position(0)
@@ -157,17 +160,13 @@ def get_radar_plot(series, label, series2, label2, title, prefix):
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     c1 = "#DD8452"
     c2 = "#4C72B0"
-    # Ind1
-    values = series.tolist()
-    values += values[:1]
-    ax.plot(angles, values, color=c1, linewidth=1, linestyle='solid', label=label)
-    ax.fill(angles, values, color=c1, alpha=0.1)
+    c3 = "#228833"
 
-    # Ind2
-    values = series2.tolist()
-    values += values[:1]
-    ax.plot(angles, values, color=c2, linewidth=1, linestyle='solid', label=label2)
-    ax.fill(angles, values, color=c2, alpha=0.1)
+    for (series, label), color in zip(series_lapel_list, [c1, c2, c3]):
+        values = series.tolist()
+        values += values[:1]
+        ax.plot(angles, values, color=color, linewidth=1, linestyle='solid', label=label)
+        ax.fill(angles, values, color=color, alpha=0.1)
 
     # Add legend
     plt.legend(loc='upper right', bbox_to_anchor=(0.2, 1.15))
@@ -268,7 +267,7 @@ def plot_missed_score(df_correct, df_faulty, fname):
     ax.bar(0, 0, color=colors[2], label="not covered")
     ax.set_xticks(pos_list, label_list, rotation=45, ha='right', rotation_mode='anchor')
     ax.grid(which='major', axis='y', color='gray', linestyle='--', linewidth=1)
-    plt.legend(loc="upper left",bbox_to_anchor=(0.95,1))
+    plt.legend(loc="upper left", bbox_to_anchor=(0.95, 1))
 
     plt.savefig(fname + ".pdf", bbox_inches='tight')
 
@@ -279,6 +278,8 @@ def main():
     df_full = pd.read_csv(args.input, header=0, low_memory=False)
     df_cobe = pd.read_csv(args.cobe, header=0, low_memory=False)
     df_mbi = pd.read_csv(args.mbi, header=0, low_memory=False)
+    df_mbb_raw = pd.read_csv(args.mbb, header=0, low_memory=False)
+    df_mbb = post_process_data(df_mbb_raw, True)
 
     # in the mbi repo, there are other codes (e.g. the tools or the blueprints to generate the gencodes)
     # but only the gencodes are testcases
@@ -292,22 +293,30 @@ def main():
     score_table = get_scoring_table(df_full)
     get_scoresheet_overview_plot(score_table, args.output_prefix)
 
-    print("score corrbenchs (6 different configs)")
+    print("score corrbenchs (9 different configs)")
     result_cobe_correct = use_scoring_table(df_cobe[df_cobe["src_location"].str.contains("correct")], score_table)
     result_cobe_faulty = use_scoring_table(df_cobe[~df_cobe["src_location"].str.contains("correct")], score_table)
     result_mbi_correct = use_scoring_table(df_mbi[df_mbi["src_location"].str.contains("ok.c")], score_table)
     result_mbi_faulty = use_scoring_table(df_mbi[df_mbi["src_location"].str.contains("nok.c")], score_table)
+
+    result_mbb_faulty = use_scoring_table(~df_mbb[df_mbb["src_location"].str.contains("Correct-")], score_table)
+    result_mbb_correct = use_scoring_table(df_mbb[df_mbb["src_location"].str.contains("Correct-")], score_table)
+
     result_cobe_full = use_scoring_table(df_cobe, score_table)
     result_mbi_full = use_scoring_table(df_mbi, score_table)
+    result_mbb_full = use_scoring_table(df_mbb, score_table)
 
     print("Final Scores:")
     print("\tfaulty\tcorrect\tall")
-    print("COBE\t%.2f\t%.2f\t%.2f" % (
+    print("MBB\t%.2f\t%.2f\t%.2f" % (
         result_cobe_faulty["achieved_score"].sum(), result_cobe_correct["achieved_score"].sum(),
         result_cobe_full["achieved_score"].sum()))
     print("MBI\t%.2f\t%.2f\t%.2f" % (
         result_mbi_faulty["achieved_score"].sum(), result_mbi_correct["achieved_score"].sum(),
         result_mbi_full["achieved_score"].sum()))
+    print("MBB\t%.2f\t%.2f\t%.2f" % (
+    result_mbb_faulty["achieved_score"].sum(), result_mbb_correct["achieved_score"].sum(),
+    result_mbb_full["achieved_score"].sum()))
     print("of %.2f maximum" % score_table["score"].sum())
 
     plot_missed_score(result_cobe_correct, result_cobe_faulty, "missed_score_cobe")
@@ -318,15 +327,18 @@ def main():
     result_cobe_faulty = get_scores_per_cat(result_cobe_faulty)
     result_mbi_correct = get_scores_per_cat(result_mbi_correct)
     result_mbi_faulty = get_scores_per_cat(result_mbi_faulty)
+    result_mbb_correct = get_scores_per_cat(result_mbb_correct)
+    result_mbb_faulty = get_scores_per_cat(result_mbb_faulty)
 
-    get_radar_plot(result_mbi_correct.loc["achieved_score"] / result_mbi_correct.loc["score"], "MBI",
-                   result_cobe_correct.loc["achieved_score"] / result_cobe_correct.loc["score"], "COBE",
-                   "Correct testcases", args.output_prefix)
+    get_radar_plot([(result_mbi_correct.loc["achieved_score"] / result_mbi_correct.loc["score"], "MBI"),
+                    (result_cobe_correct.loc["achieved_score"] / result_cobe_correct.loc["score"], "COBE"),
+                    (result_mbb_correct.loc["achieved_score"] / result_mbb_correct.loc["score"], "MBB")],
+                   "Correct_testcases", args.output_prefix)
 
-
-    get_radar_plot(result_mbi_faulty.loc["achieved_score"] / result_mbi_faulty.loc["score"], "MBI",
-                   result_cobe_faulty.loc["achieved_score"] / result_cobe_faulty.loc["score"], "COBE",
-                   "Faulty testcases", args.output_prefix)
+    get_radar_plot([(result_mbi_faulty.loc["achieved_score"] / result_mbi_faulty.loc["score"], "MBI"),
+                    (result_cobe_faulty.loc["achieved_score"] / result_cobe_faulty.loc["score"], "COBE"),
+                    (result_mbb_faulty.loc["achieved_score"] / result_mbb_faulty.loc["score"], "MBB")],
+                   "Faulty_testcases", args.output_prefix)
 
 
 if __name__ == "__main__":
