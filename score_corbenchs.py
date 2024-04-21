@@ -276,6 +276,11 @@ def main():
     args = parseArgs()
 
     df_full = pd.read_csv(args.input, header=0, low_memory=False)
+    #remove fortran codes
+    df_full = df_full[~df_full['src_location'].str.contains(".f", regex=False)]
+    df_full = df_full[~df_full['src_location'].str.contains(".F", regex=False)]
+
+
     df_cobe = pd.read_csv(args.cobe, header=0, low_memory=False)
     df_mbi = pd.read_csv(args.mbi, header=0, low_memory=False)
     df_mbb_raw = pd.read_csv(args.mbb, header=0, low_memory=False)
