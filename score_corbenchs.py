@@ -287,6 +287,7 @@ def main():
 
     # we exclude some calls like MPI init form scoring as they are of no relevancy for our purpose
     df_mbi = df_mbi[~df_mbi["call"].isin(calls_to_exclude)]
+    df_mbb = df_mbb[~df_mbb["call"].isin(calls_to_exclude)]
     df_cobe = df_cobe[~df_cobe["call"].isin(calls_to_exclude)]
 
     print("build scoring table")
@@ -299,8 +300,8 @@ def main():
     result_mbi_correct = use_scoring_table(df_mbi[df_mbi["src_location"].str.contains("ok.c")], score_table)
     result_mbi_faulty = use_scoring_table(df_mbi[df_mbi["src_location"].str.contains("nok.c")], score_table)
 
-    result_mbb_faulty = use_scoring_table(~df_mbb[df_mbb["src_location"].str.contains("Correct-")], score_table)
-    result_mbb_correct = use_scoring_table(df_mbb[df_mbb["src_location"].str.contains("Correct-")], score_table)
+    result_mbb_faulty = use_scoring_table(df_mbb[~df_mbb["src_location"].str.contains("Correct")], score_table)
+    result_mbb_correct = use_scoring_table(df_mbb[df_mbb["src_location"].str.contains("Correct")], score_table)
 
     result_cobe_full = use_scoring_table(df_cobe, score_table)
     result_mbi_full = use_scoring_table(df_mbi, score_table)
@@ -308,7 +309,7 @@ def main():
 
     print("Final Scores:")
     print("\tfaulty\tcorrect\tall")
-    print("MBB\t%.2f\t%.2f\t%.2f" % (
+    print("COBE\t%.2f\t%.2f\t%.2f" % (
         result_cobe_faulty["achieved_score"].sum(), result_cobe_correct["achieved_score"].sum(),
         result_cobe_full["achieved_score"].sum()))
     print("MBI\t%.2f\t%.2f\t%.2f" % (
