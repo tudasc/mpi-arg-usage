@@ -18,8 +18,8 @@ def post_process_data(df_raw, match_only_same_file=False):
     # for the more expensive matching: usage of parallelism is beneficial
     print("Stage 2 of 7")
     defines_df = df_raw[df_raw['call'] == "#define"]
-    defines_df = defines_df[['Code', 'define_value', 'defined_token']]
-    df = df_raw.parallel_apply(get_definition, axis=1, args=(defines_df,))
+    defines_df = defines_df[['Code', 'src_location', 'define_value', 'defined_token']]
+    df = df_raw.parallel_apply(get_definition, axis=1, args=(defines_df, match_only_same_file))
     # load balancing is bad
 
     # we dont want to analyze the defines
@@ -81,9 +81,12 @@ def get_corresponding_creator(row, full_df, col, col_new, print_inconclusive=Fal
     return row
 
 
-def get_definition(row, defines_df):
+def get_definition(row, defines_df, match_only_same_file=False):
     if row["call"] != "#define":
         same_code = defines_df[defines_df['Code'] == row['Code']]
+        if match_only_same_file:
+            same_code = same_code[same_code['src_location'] == row['src_location']]
+
         row['params_by_define'] = []
         for index, value in row.items():
             if value != "" and not value in predefined_mpi_constants and index not in ['Code', 'src_location',
