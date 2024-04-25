@@ -22,6 +22,9 @@ def post_process_data(df_raw, match_only_same_file=False):
     df = df_raw.parallel_apply(get_definition, axis=1, args=(defines_df,))
     # load balancing is bad
 
+    # we dont want to analyze the defines
+    df = df[df['call'] != "#define"]
+
     # try to match a corresponding type creation function for ech type used
     print("Stage 3 of 7")
     if 'DATATYPE' in df.columns and "newDatatype" in df.columns:
@@ -42,9 +45,6 @@ def post_process_data(df_raw, match_only_same_file=False):
     for p in tqdm(df.columns):
         if p.isupper():
             df[p + '_CATEGORY'] = df.apply(get_category, axis=1, args=(p, df_raw))
-
-    # we dont want to analyze the defines
-    df = df[df['call'] != "#define"]
 
     return df
 
