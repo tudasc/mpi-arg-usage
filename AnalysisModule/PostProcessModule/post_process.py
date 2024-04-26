@@ -27,7 +27,7 @@ def post_process_data(df_raw, match_only_same_file=False):
 
     # try to match a corresponding type creation function for ech type used
     print("Stage 3 of 7")
-    if 'DATATYPE' in df.columns and "newDatatype" in df.columns:
+    if 'DATATYPE' in df.columns and "newDATATYPE" in df.columns:
         df = df.parallel_apply(get_corresponding_creator, axis=1,
                                args=(df_raw, 'DATATYPE', 'newDATATYPE', False, match_only_same_file))
     print("Stage 4 of 7")
@@ -77,6 +77,10 @@ def get_corresponding_creator(row, full_df, col, col_new, print_inconclusive=Fal
                     matching_creator = select_matching['call'].iloc[0]
                     row[col] = matching_creator
             else:
+                if row['call'] == "MPI_Type_commit":
+                    print("NOT MATCHING:" + datatype)
+                    #ASSERTION DID NOT TRIGGER: this part works correct
+                    assert False
                 pass
     return row
 
