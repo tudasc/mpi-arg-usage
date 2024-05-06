@@ -77,10 +77,6 @@ def get_corresponding_creator(row, full_df, col, col_new, print_inconclusive=Fal
                     matching_creator = select_matching['call'].iloc[0]
                     row[col] = matching_creator
             else:
-                if row['call'] == "MPI_Type_commit":
-                    print("NOT MATCHING:" + datatype)
-                    #ASSERTION DID NOT TRIGGER: this part works correct
-                    assert False
                 pass
     return row
 
