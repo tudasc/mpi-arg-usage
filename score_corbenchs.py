@@ -68,7 +68,7 @@ def get_scoresheet_overview_plot(score_table, prefix):
     above = False
     y_sep_list = [0.05, 0.05, 0.20, 0.2]
     i = 0
-    ax = pd.DataFrame(scores_per_cat.loc["score"]).T.plot.barh(stacked=True, figsize=(8, 2), legend=False,
+    ax = pd.DataFrame(scores_per_cat.loc["score"]).T.plot.barh(stacked=True, figsize=(16, 2), legend=False,
                                                                edgecolor="black")
     ax.set_ylabel('')
     ax.set_yticklabels([])
@@ -169,7 +169,7 @@ def get_radar_plot(series_lapel_list, title, prefix):
         ax.fill(angles, values, color=color, alpha=0.1)
 
     # Add legend
-    plt.legend(loc='upper right', bbox_to_anchor=(0.2, 1.15))
+    plt.legend(loc='upper right', bbox_to_anchor=(0.01, 1.15))
     plt.title = (title)
 
     plt.tight_layout()
@@ -280,6 +280,12 @@ def main():
     df_full = df_full[~df_full['src_location'].str.contains(".f", regex=False)]
     df_full = df_full[~df_full['src_location'].str.contains(".F", regex=False)]
 
+    print("build scoring table")
+    score_table = get_scoring_table(df_full)
+    get_scoresheet_overview_plot(score_table, args.output_prefix)
+
+    print("Read Data to score")
+
 
     df_cobe = pd.read_csv(args.cobe, header=0, low_memory=False)
     df_mbi = pd.read_csv(args.mbi, header=0, low_memory=False)
@@ -295,9 +301,7 @@ def main():
     df_mbb = df_mbb[~df_mbb["call"].isin(calls_to_exclude)]
     df_cobe = df_cobe[~df_cobe["call"].isin(calls_to_exclude)]
 
-    print("build scoring table")
-    score_table = get_scoring_table(df_full)
-    get_scoresheet_overview_plot(score_table, args.output_prefix)
+
 
     print("score corrbenchs (9 different configs)")
     result_cobe_correct = use_scoring_table(df_cobe[df_cobe["src_location"].str.contains("correct")], score_table)
