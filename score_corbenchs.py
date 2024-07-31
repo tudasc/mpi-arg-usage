@@ -158,14 +158,19 @@ def get_radar_plot(series_lapel_list, title, prefix):
     # I don't make a loop, because plotting more than 3 groups makes the chart unreadable
 
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    c1 = "#DD8452"
-    c2 = "#4C72B0"
-    c3 = "#228833"
+    c1 = "#DDAA33"
+    c2 = "#BB5566"
+    c3 = "#004488"
 
     for (series, label), color in zip(series_lapel_list, [c1, c2, c3]):
         values = series.tolist()
         values += values[:1]
-        ax.plot(angles, values, color=color, linewidth=1, linestyle='solid', label=label)
+        if label == "MBB":
+            ax.plot(angles, values, color=color, linewidth=1, linestyle='dashed', label=label)
+        elif label == "COBE":
+            ax.plot(angles, values, color=color, linewidth=1, linestyle='dotted', label=label)
+        else:
+            ax.plot(angles, values, color=color, linewidth=1, linestyle='solid', label=label)
         ax.fill(angles, values, color=color, alpha=0.1)
 
     # Add legend
