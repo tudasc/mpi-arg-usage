@@ -303,8 +303,8 @@ def main():
     df_mbi = pd.read_csv(args.mbi, header=0, low_memory=False)
     df_mbb_raw1 = pd.read_csv(args.mbb1, header=0, low_memory=False)
     df_mbb_raw2 = pd.read_csv(args.mbb2, header=0, low_memory=False)
-    df_mbb2 = post_process_data(df_mbb_raw1, True)
-    df_mbb1 = post_process_data(df_mbb_raw2, True)
+    df_mbb1 = post_process_data(df_mbb_raw1, True)
+    df_mbb2 = post_process_data(df_mbb_raw2, True)
 
     # in the mbi repo, there are other codes (e.g. the tools or the blueprints to generate the gencodes)
     # but only the gencodes are testcases
@@ -324,8 +324,8 @@ def main():
 
     result_mbb1_faulty = use_scoring_table(df_mbb1[~df_mbb1["src_location"].str.contains("Correct")], score_table)
     result_mbb1_correct = use_scoring_table(df_mbb1[df_mbb1["src_location"].str.contains("Correct")], score_table)
-    result_mbb2_faulty = use_scoring_table(df_mbb2[~df_mbb1["src_location"].str.contains("Correct")], score_table)
-    result_mbb2_correct = use_scoring_table(df_mbb2[df_mbb1["src_location"].str.contains("Correct")], score_table)
+    result_mbb2_faulty = use_scoring_table(df_mbb2[~df_mbb2["src_location"].str.contains("Correct")], score_table)
+    result_mbb2_correct = use_scoring_table(df_mbb2[df_mbb2["src_location"].str.contains("Correct")], score_table)
 
     result_cobe_full = use_scoring_table(df_cobe, score_table)
     result_mbi_full = use_scoring_table(df_mbi, score_table)
@@ -370,7 +370,7 @@ def main():
     get_radar_plot([(result_mbi_faulty.loc["achieved_score"] / result_mbi_faulty.loc["score"], "MBI"),
                     (result_cobe_faulty.loc["achieved_score"] / result_cobe_faulty.loc["score"], "COBE"),
                     (result_mbb1_faulty.loc["achieved_score"] / result_mbb1_faulty.loc["score"], "MBB 1"),
-                    (result_mbb2_faulty.loc["achieved_score"] / result_mbb2_faulty.loc["score"], "MBB 1"), ],
+                    (result_mbb2_faulty.loc["achieved_score"] / result_mbb2_faulty.loc["score"], "MBB 2"), ],
                    "Faulty_testcases", args.output_prefix)
 
 
