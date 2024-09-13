@@ -29,8 +29,10 @@ def parseArgs():
                         help='data for MPI-Corrbench')
     parser.add_argument('--mbi', default='merged_mbi.csv',
                         help='data for MpiBugsInitiative')
-    parser.add_argument('--mbb', default='mbb.csv',
-                        help='data for MpiBugBench')
+    parser.add_argument('--mbb1', default='mbb1.csv',
+                        help='data for MpiBugBench lv 1')
+    parser.add_argument('--mbb2', default='mbb2.csv',
+                        help='data for MpiBugBench lv 2')
 
     return parser.parse_args()
 
@@ -160,15 +162,19 @@ def get_radar_plot(series_lapel_list, title, prefix):
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     c1 = "#DDAA33"
     c2 = "#BB5566"
-    c3 = "#004488"
+    c3 = "#EE7733"
+    c4 = "#004488"
 
-    for (series, label), color in zip(series_lapel_list, [c1, c2, c3]):
+
+    for (series, label), color in zip(series_lapel_list, [c1, c2, c3, c4]):
         values = series.tolist()
         values += values[:1]
-        if label == "MBB":
+        if label == "MBB 1":
             ax.plot(angles, values, color=color, linewidth=1, linestyle='dashed', label=label)
         elif label == "COBE":
             ax.plot(angles, values, color=color, linewidth=1, linestyle='dotted', label=label)
+        elif label == "MBI":
+            ax.plot(angles, values, color=color, linewidth=1, linestyle='dashdot', label=label)
         else:
             ax.plot(angles, values, color=color, linewidth=1, linestyle='solid', label=label)
         ax.fill(angles, values, color=color, alpha=0.1)
@@ -250,7 +256,9 @@ def plot_missed_score(df_correct, df_faulty, fname):
     label_list = []
     # colors = sns.color_palette("tab10").as_hex()
     # colors = list(reversed(colors[0:3]))
+    # colors = ["#55A868", "#DD8452", "#4C72B0"]
     colors = ["#55A868", "#DD8452", "#4C72B0"]
+
     for i, label in enumerate(index_to_use):
         v = df_faulty.loc[label].values
         assert len(v) == 3
@@ -281,9 +289,9 @@ def main():
     args = parseArgs()
 
     df_full = pd.read_csv(args.input, header=0, low_memory=False)
-    #remove fortran codes
-    df_full = df_full[~df_full['src_location'].str.contains(".f", regex=False)]
-    df_full = df_full[~df_full['src_location'].str.contains(".F", regex=False)]
+    # remove fortran codes
+    # df_full = df_full[~df_full['src_location'].str.contains(".f", regex=False)]
+    # df_full = df_full[~df_full['src_location'].str.contains(".F", regex=False)]
 
     print("build scoring table")
     score_table = get_scoring_table(df_full)
@@ -291,11 +299,12 @@ def main():
 
     print("Read Data to score")
 
-
     df_cobe = pd.read_csv(args.cobe, header=0, low_memory=False)
     df_mbi = pd.read_csv(args.mbi, header=0, low_memory=False)
-    df_mbb_raw = pd.read_csv(args.mbb, header=0, low_memory=False)
-    df_mbb = post_process_data(df_mbb_raw, True)
+    df_mbb_raw1 = pd.read_csv(args.mbb1, header=0, low_memory=False)
+    df_mbb_raw2 = pd.read_csv(args.mbb2, header=0, low_memory=False)
+    df_mbb2 = post_process_data(df_mbb_raw1, True)
+    df_mbb1 = post_process_data(df_mbb_raw2, True)
 
     # in the mbi repo, there are other codes (e.g. the tools or the blueprints to generate the gencodes)
     # but only the gencodes are testcases
@@ -303,10 +312,9 @@ def main():
 
     # we exclude some calls like MPI init form scoring as they are of no relevancy for our purpose
     df_mbi = df_mbi[~df_mbi["call"].isin(calls_to_exclude)]
-    df_mbb = df_mbb[~df_mbb["call"].isin(calls_to_exclude)]
+    df_mbb1 = df_mbb1[~df_mbb1["call"].isin(calls_to_exclude)]
+    df_mbb2 = df_mbb2[~df_mbb2["call"].isin(calls_to_exclude)]
     df_cobe = df_cobe[~df_cobe["call"].isin(calls_to_exclude)]
-
-
 
     print("score corrbenchs (9 different configs)")
     result_cobe_correct = use_scoring_table(df_cobe[df_cobe["src_location"].str.contains("correct")], score_table)
@@ -314,12 +322,15 @@ def main():
     result_mbi_correct = use_scoring_table(df_mbi[df_mbi["src_location"].str.contains("ok.c")], score_table)
     result_mbi_faulty = use_scoring_table(df_mbi[df_mbi["src_location"].str.contains("nok.c")], score_table)
 
-    result_mbb_faulty = use_scoring_table(df_mbb[~df_mbb["src_location"].str.contains("Correct")], score_table)
-    result_mbb_correct = use_scoring_table(df_mbb[df_mbb["src_location"].str.contains("Correct")], score_table)
+    result_mbb1_faulty = use_scoring_table(df_mbb1[~df_mbb1["src_location"].str.contains("Correct")], score_table)
+    result_mbb1_correct = use_scoring_table(df_mbb1[df_mbb1["src_location"].str.contains("Correct")], score_table)
+    result_mbb2_faulty = use_scoring_table(df_mbb2[~df_mbb1["src_location"].str.contains("Correct")], score_table)
+    result_mbb2_correct = use_scoring_table(df_mbb2[df_mbb1["src_location"].str.contains("Correct")], score_table)
 
     result_cobe_full = use_scoring_table(df_cobe, score_table)
     result_mbi_full = use_scoring_table(df_mbi, score_table)
-    result_mbb_full = use_scoring_table(df_mbb, score_table)
+    result_mbb1_full = use_scoring_table(df_mbb1, score_table)
+    result_mbb2_full = use_scoring_table(df_mbb2, score_table)
 
     print("Final Scores:")
     print("\tfaulty\tcorrect\tall")
@@ -329,9 +340,12 @@ def main():
     print("MBI\t%.2f\t%.2f\t%.2f" % (
         result_mbi_faulty["achieved_score"].sum(), result_mbi_correct["achieved_score"].sum(),
         result_mbi_full["achieved_score"].sum()))
-    print("MBB\t%.2f\t%.2f\t%.2f" % (
-    result_mbb_faulty["achieved_score"].sum(), result_mbb_correct["achieved_score"].sum(),
-    result_mbb_full["achieved_score"].sum()))
+    print("MBB 1\t%.2f\t%.2f\t%.2f" % (
+        result_mbb1_faulty["achieved_score"].sum(), result_mbb1_correct["achieved_score"].sum(),
+        result_mbb1_full["achieved_score"].sum()))
+    print("MBB 2\t%.2f\t%.2f\t%.2f" % (
+        result_mbb2_faulty["achieved_score"].sum(), result_mbb2_correct["achieved_score"].sum(),
+        result_mbb2_full["achieved_score"].sum()))
     print("of %.2f maximum" % score_table["score"].sum())
 
     plot_missed_score(result_cobe_correct, result_cobe_faulty, "missed_score_cobe")
@@ -342,17 +356,21 @@ def main():
     result_cobe_faulty = get_scores_per_cat(result_cobe_faulty)
     result_mbi_correct = get_scores_per_cat(result_mbi_correct)
     result_mbi_faulty = get_scores_per_cat(result_mbi_faulty)
-    result_mbb_correct = get_scores_per_cat(result_mbb_correct)
-    result_mbb_faulty = get_scores_per_cat(result_mbb_faulty)
+    result_mbb1_correct = get_scores_per_cat(result_mbb1_correct)
+    result_mbb1_faulty = get_scores_per_cat(result_mbb1_faulty)
+    result_mbb2_correct = get_scores_per_cat(result_mbb2_correct)
+    result_mbb2_faulty = get_scores_per_cat(result_mbb2_faulty)
 
     get_radar_plot([(result_mbi_correct.loc["achieved_score"] / result_mbi_correct.loc["score"], "MBI"),
                     (result_cobe_correct.loc["achieved_score"] / result_cobe_correct.loc["score"], "COBE"),
-                    (result_mbb_correct.loc["achieved_score"] / result_mbb_correct.loc["score"], "MBB")],
+                    (result_mbb1_correct.loc["achieved_score"] / result_mbb1_correct.loc["score"], "MBB 1"),
+                    (result_mbb2_correct.loc["achieved_score"] / result_mbb2_correct.loc["score"], "MBB 2")],
                    "Correct_testcases", args.output_prefix)
 
     get_radar_plot([(result_mbi_faulty.loc["achieved_score"] / result_mbi_faulty.loc["score"], "MBI"),
                     (result_cobe_faulty.loc["achieved_score"] / result_cobe_faulty.loc["score"], "COBE"),
-                    (result_mbb_faulty.loc["achieved_score"] / result_mbb_faulty.loc["score"], "MBB")],
+                    (result_mbb1_faulty.loc["achieved_score"] / result_mbb1_faulty.loc["score"], "MBB 1"),
+                    (result_mbb2_faulty.loc["achieved_score"] / result_mbb2_faulty.loc["score"], "MBB 1"), ],
                    "Faulty_testcases", args.output_prefix)
 
 
